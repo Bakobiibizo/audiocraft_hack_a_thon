@@ -144,10 +144,7 @@ class DiffusionUnet(nn.Module):
             chin = hidden
             hidden = min(int(chin * growth), max_channels)
         self.bilstm: tp.Optional[nn.Module]
-        if bilstm:
-            self.bilstm = BLSTM(chin)
-        else:
-            self.bilstm = None
+        self.bilstm = BLSTM(chin) if bilstm else None
         self.use_transformer = transformer
         self.cross_attention = False
         if transformer:
@@ -183,7 +180,7 @@ class DiffusionUnet(nn.Module):
             assert condition is not None, "Model defined for conditionnal generation"
             condition_emb = self.conv_codec(condition)  # reshape to the bottleneck dim
             assert condition_emb.size(-1) <= 2 * z.size(-1), \
-                f"You are downsampling the conditionning with factor >=2 : {condition_emb.size(-1)=} and {z.size(-1)=}"
+                    f"You are downsampling the conditionning with factor >=2 : {condition_emb.size(-1)=} and {z.size(-1)=}"
             if not self.cross_attention:
 
                 condition_emb = torch.nn.functional.interpolate(condition_emb, z.size(-1))
@@ -199,11 +196,7 @@ class DiffusionUnet(nn.Module):
         if self.use_transformer:
             z = self.transformer(z.permute(0, 2, 1), cross_attention_src=cross_attention_src).permute(0, 2, 1)
         else:
-            if self.bilstm is None:
-                z = torch.zeros_like(z)
-            else:
-                z = self.bilstm(z)
-
+            z = torch.zeros_like(z) if self.bilstm is None else self.bilstm(z)
         for decoder in self.decoders:
             s = skips.pop(-1)
             z = z[:, :, :s.shape[2]]

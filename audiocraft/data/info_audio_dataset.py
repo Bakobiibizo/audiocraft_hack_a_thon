@@ -104,7 +104,4 @@ def get_keyword_list(values: tp.Union[str, tp.List[str]]) -> tp.Optional[tp.List
 
     kws = [get_keyword(v) for v in values]
     kw_list = [k for k in kws if k is not None]
-    if len(kw_list) == 0:
-        return None
-    else:
-        return kw_list
+    return None if not kw_list else kw_list

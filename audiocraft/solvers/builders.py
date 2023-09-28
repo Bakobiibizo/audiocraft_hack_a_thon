@@ -66,7 +66,6 @@ def get_optim_parameter_groups(model: nn.Module):
         List of parameter groups
     """
     seen_params: tp.Set[nn.parameter.Parameter] = set()
-    other_params = []
     groups = []
     for name, module in model.named_modules():
         if hasattr(module, 'make_optim_group'):
@@ -75,12 +74,11 @@ def get_optim_parameter_groups(model: nn.Module):
             assert params.isdisjoint(seen_params)
             seen_params |= set(params)
             groups.append(group)
-    for param in model.parameters():
-        if param not in seen_params:
-            other_params.append(param)
+    other_params = [
+        param for param in model.parameters() if param not in seen_params
+    ]
     groups.insert(0, {'params': other_params})
-    parameters = groups
-    return parameters
+    return groups
 
 
 def get_optimizer(params: tp.Union[nn.Module, tp.Iterable[torch.Tensor]], cfg: omegaconf.DictConfig) -> Optimizer:
@@ -173,8 +171,7 @@ def get_ema(module_dict: nn.ModuleDict, cfg: omegaconf.DictConfig) -> tp.Optiona
         return None
     if len(module_dict) == 0:
         raise ValueError("Trying to build EMA but an empty module_dict source is provided!")
-    ema_module = optim.ModuleDictEMA(module_dict, decay=decay, device=device)
-    return ema_module
+    return optim.ModuleDictEMA(module_dict, decay=decay, device=device)
 
 
 def get_loss(loss_name: str, cfg: omegaconf.DictConfig):
@@ -303,8 +300,7 @@ def get_audio_datasets(cfg: omegaconf.DictConfig,
     assert cfg.dataset is not None, "Could not find dataset definition in config"
 
     dataset_cfg = dict_from_config(cfg.dataset)
-    splits_cfg: dict = {}
-    splits_cfg['train'] = dataset_cfg.pop('train')
+    splits_cfg: dict = {'train': dataset_cfg.pop('train')}
     splits_cfg['valid'] = dataset_cfg.pop('valid')
     splits_cfg['evaluate'] = dataset_cfg.pop('evaluate')
     splits_cfg['generate'] = dataset_cfg.pop('generate')
@@ -324,11 +320,13 @@ def get_audio_datasets(cfg: omegaconf.DictConfig,
         ), f"Expecting a max number of channels of {max_channels} for datasource but {channels} found."
 
         split_cfg = splits_cfg[split]
-        split_kwargs = {k: v for k, v in split_cfg.items()}
-        kwargs = {**dataset_cfg, **split_kwargs}  # split kwargs overrides default dataset_cfg
-        kwargs['sample_rate'] = sample_rate
-        kwargs['channels'] = channels
-
+        split_kwargs = dict(split_cfg.items())
+        kwargs = {
+            **dataset_cfg,
+            **split_kwargs,
+            'sample_rate': sample_rate,
+            'channels': channels,
+        }
         if kwargs.get('permutation_on_files') and cfg.optim.updates_per_epoch:
             kwargs['num_samples'] = (
                 flashy.distrib.world_size() * cfg.dataset.batch_size * cfg.optim.updates_per_epoch)

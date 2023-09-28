@@ -177,11 +177,7 @@ class PasstKLDivergenceMetric(KLDivergenceMetric):
         wav = wav.squeeze(0)
         # we don't pad but return a list of audio segments as this otherwise affects the KLD computation
         segments = torch.split(wav, self.max_input_frames, dim=-1)
-        valid_segments = []
-        for s in segments:
-            # ignoring too small segments that are breaking the model inference
-            if s.size(-1) > self.min_input_frames:
-                valid_segments.append(s)
+        valid_segments = [s for s in segments if s.size(-1) > self.min_input_frames]
         return [s[None] for s in valid_segments]
 
     def _get_model_preds(self, wav: torch.Tensor) -> torch.Tensor:
@@ -189,11 +185,10 @@ class PasstKLDivergenceMetric(KLDivergenceMetric):
         assert wav.dim() == 3, f"Unexpected number of dims for preprocessed wav: {wav.shape}"
         wav = wav.mean(dim=1)
         # PaSST is printing a lot of garbage that we are not interested in
-        with open(os.devnull, "w") as f, contextlib.redirect_stdout(f):
-            with torch.no_grad(), _patch_passt_stft():
+        with (open(os.devnull, "w") as f, contextlib.redirect_stdout(f)):
+            with (torch.no_grad(), _patch_passt_stft()):
                 logits = self.model(wav.to(self.device))
-                probs = torch.softmax(logits, dim=-1)
-                return probs
+                return torch.softmax(logits, dim=-1)
 
     def _get_label_distribution(self, x: torch.Tensor, sizes: torch.Tensor,
                                 sample_rates: torch.Tensor) -> tp.Optional[torch.Tensor]:
@@ -214,7 +209,4 @@ class PasstKLDivergenceMetric(KLDivergenceMetric):
             for segment in wav_segments:
                 probs = self._get_model_preds(segment).mean(dim=0)
                 all_probs.append(probs)
-        if len(all_probs) > 0:
-            return torch.stack(all_probs, dim=0)
-        else:
-            return None
+        return torch.stack(all_probs, dim=0) if len(all_probs) > 0 else None

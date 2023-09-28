@@ -137,8 +137,7 @@ class ViSQOL:
         # collect results for each evaluated pair and return averaged moslqo score.
         with open(results_csv_path, "r") as csv_file:
             reader = csv.DictReader(csv_file)
-            moslqo_scores = [float(row["moslqo"]) for row in reader]
-            if len(moslqo_scores) > 0:
+            if moslqo_scores := [float(row["moslqo"]) for row in reader]:
                 return sum(moslqo_scores) / len(moslqo_scores)
             else:
                 return 0.0
@@ -146,8 +145,7 @@ class ViSQOL:
     def _collect_debug_data(self, debug_json_path: tp.Union[Path, str]) -> dict:
         # collect debug data for the visqol inference.
         with open(debug_json_path, "r") as f:
-            data = json.load(f)
-            return data
+            return json.load(f)
 
     @property
     def visqol_model(self):
@@ -206,8 +204,7 @@ class ViSQOL:
                     results_csv,
                     debug_json if self.debug else None,
                 )
-                mosqol = self._collect_moslqo_score(results_csv)
-                return mosqol
+                return self._collect_moslqo_score(results_csv)
             else:
                 raise RuntimeError("Something unexpected happened when running VISQOL!")
         except Exception as e:

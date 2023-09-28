@@ -25,14 +25,11 @@ class InverseSquareRootLRScheduler(_LRScheduler):
         super().__init__(optimizer)
 
     def _get_sched_lr(self, lr: float, step: int):
-        if step < self.warmup_steps:
-            warmup_init_lr = self.warmup_init_lr or 0
-            lr_step = (lr - warmup_init_lr) / self.warmup_steps
-            lr = warmup_init_lr + step * lr_step
-        else:
-            decay_factor = lr * self.warmup_steps**0.5
-            lr = decay_factor * step**-0.5
-        return lr
+        if step >= self.warmup_steps:
+            return lr * self.warmup_steps**0.5 * step**-0.5
+        warmup_init_lr = self.warmup_init_lr or 0
+        lr_step = (lr - warmup_init_lr) / self.warmup_steps
+        return warmup_init_lr + step * lr_step
 
     def get_lr(self):
         return [self._get_sched_lr(base_lr, self._step_count) for base_lr in self.base_lrs]

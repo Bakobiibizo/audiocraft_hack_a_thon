@@ -101,10 +101,7 @@ def load_lm_model(file_or_url_or_id: tp.Union[Path, str], device='cpu', cache_di
     pkg = load_lm_model_ckpt(file_or_url_or_id, cache_dir=cache_dir)
     cfg = OmegaConf.create(pkg['xp.cfg'])
     cfg.device = str(device)
-    if cfg.device == 'cpu':
-        cfg.dtype = 'float32'
-    else:
-        cfg.dtype = 'float16'
+    cfg.dtype = 'float32' if cfg.device == 'cpu' else 'float16'
     _delete_param(cfg, 'conditioners.self_wav.chroma_stem.cache_path')
     _delete_param(cfg, 'conditioners.args.merge_text_conditions_p')
     _delete_param(cfg, 'conditioners.args.drop_desc_p')

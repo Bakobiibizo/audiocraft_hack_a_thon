@@ -35,8 +35,7 @@ def get_song_path():
 
 def get_temp_path(i):
     try:
-        TEMP_PATH = f"out/continue_{i}"
-        return TEMP_PATH
+        return f"out/continue_{i}"
     except FileNotFoundError as error:
         raise Exception("Error in get_out_path function") from error
 
@@ -44,8 +43,7 @@ def get_temp_path(i):
 def get_out_path():
     try:
         count = len(os.listdir("out/"))
-        OUT_PATH = f"out/combined_audio_{count}.wav"
-        return OUT_PATH
+        return f"out/combined_audio_{count}.wav"
     except FileNotFoundError as error:
         raise Exception("Error in get_out_path function") from error
 

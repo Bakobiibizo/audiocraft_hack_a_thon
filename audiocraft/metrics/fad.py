@@ -274,9 +274,7 @@ class FrechetAudioDistanceMetric(torchmetrics.Metric):
             )
             raise RuntimeError("Error while executing FAD computation from stats")
         try:
-            # result is "FAD: (d+).(d+)" hence we remove the prefix with (d+) being one digit or more
-            fad_score = float(result.stdout[4:])
-            return fad_score
+            return float(result.stdout[4:])
         except Exception as e:
             raise RuntimeError(f"Error parsing FAD score from command stdout: {e}")
 
@@ -317,8 +315,7 @@ class FrechetAudioDistanceMetric(torchmetrics.Metric):
             self._parallel_create_embedding_beams(num_of_gpus)
         else:
             self._sequential_create_embedding_beams()
-        fad_score = self._compute_fad_score(gpu_index=0)
-        return fad_score
+        return self._compute_fad_score(gpu_index=0)
 
     def compute(self) -> float:
         """Compute metrics."""

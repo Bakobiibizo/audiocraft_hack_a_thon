@@ -26,8 +26,8 @@ class TestMultiPeriodDiscriminator:
 
         assert len(logits) == len(periods)
         assert len(fmaps) == len(periods)
-        assert all([logit.shape[0] == N and len(logit.shape) == 4 for logit in logits])
-        assert all([feature.shape[0] == N for fmap in fmaps for feature in fmap])
+        assert all(logit.shape[0] == N and len(logit.shape) == 4 for logit in logits)
+        assert all(feature.shape[0] == N for fmap in fmaps for feature in fmap)
 
 
 class TestMultiScaleDiscriminator:
@@ -42,8 +42,8 @@ class TestMultiScaleDiscriminator:
 
         assert len(logits) == len(scale_norms)
         assert len(fmaps) == len(scale_norms)
-        assert all([logit.shape[0] == N and len(logit.shape) == 3 for logit in logits])
-        assert all([feature.shape[0] == N for fmap in fmaps for feature in fmap])
+        assert all(logit.shape[0] == N and len(logit.shape) == 3 for logit in logits)
+        assert all(feature.shape[0] == N for fmap in fmaps for feature in fmap)
 
 
 class TestMultiScaleStftDiscriminator:
@@ -63,5 +63,5 @@ class TestMultiScaleStftDiscriminator:
 
         assert len(logits) == len(n_ffts)
         assert len(fmaps) == len(n_ffts)
-        assert all([logit.shape[0] == N and len(logit.shape) == 4 for logit in logits])
-        assert all([feature.shape[0] == N for fmap in fmaps for feature in fmap])
+        assert all(logit.shape[0] == N and len(logit.shape) == 4 for logit in logits)
+        assert all(feature.shape[0] == N for fmap in fmaps for feature in fmap)

@@ -36,10 +36,7 @@ def set_efficient_attention_backend(backend: str = 'torch'):
 
 
 def _get_attention_time_dimension() -> int:
-    if _efficient_attention_backend == 'torch':
-        return 2
-    else:
-        return 1
+    return 2 if _efficient_attention_backend == 'torch' else 1
 
 
 def _is_profiled() -> bool:
@@ -129,10 +126,7 @@ class LayerScale(nn.Module):
                        requires_grad=True, device=device, dtype=dtype))
 
     def forward(self, x: torch.Tensor):
-        if self.channel_last:
-            return self.scale * x
-        else:
-            return self.scale[:, None] * x
+        return self.scale * x if self.channel_last else self.scale[:, None] * x
 
 
 class StreamingMultiheadAttention(StreamingModule):
@@ -227,7 +221,7 @@ class StreamingMultiheadAttention(StreamingModule):
             keys = [n for n, _ in self.mha.named_parameters()]
             for key in keys:
                 if prefix + key in state_dict:
-                    state_dict[prefix + "mha." + key] = state_dict.pop(prefix + key)
+                    state_dict[f"{prefix}mha.{key}"] = state_dict.pop(prefix + key)
         super()._load_from_state_dict(state_dict, prefix, *args, **kwargs)
 
     def _get_mask(self, current_steps: int, device: torch.device, dtype: torch.dtype):
@@ -321,14 +315,11 @@ class StreamingMultiheadAttention(StreamingModule):
                                "use the causal args in the constructor.")
 
         time_dim = _get_attention_time_dimension()
-        if time_dim == 2:
-            layout = "b h t d"
-        else:
-            layout = "b t h d"
+        layout = "b h t d" if time_dim == 2 else "b t h d"
         dtype = query.dtype
         if self._is_streaming:
             assert self.causal or self.cross_attention, \
-                "Streaming only available for causal or cross attention"
+                    "Streaming only available for causal or cross attention"
 
         if self.causal:
             # At the moment we specialize only for the self-attention case.
@@ -365,10 +356,7 @@ class StreamingMultiheadAttention(StreamingModule):
                     assert value is key, "specialized implementation"
                 projected = nn.functional.linear(query, self.in_proj_weight, self.in_proj_bias)
                 if self.kv_repeat == 1:
-                    if time_dim == 2:
-                        bound_layout = "b h p t d"
-                    else:
-                        bound_layout = "b t p h d"
+                    bound_layout = "b h p t d" if time_dim == 2 else "b t p h d"
                     packed = rearrange(projected, f"b t (p h d) -> {bound_layout}", p=3, h=self.num_heads)
                     q, k, v = ops.unbind(packed, dim=2)
                 else:
@@ -620,21 +608,21 @@ class StreamingTransformer(StreamingModule):
         self.weight_decay = weight_decay
         self.lr = lr
 
-        assert positional_embedding in ['sin', 'rope', 'sin_rope']
+        assert positional_embedding in {'sin', 'rope', 'sin_rope'}
         self.rope: tp.Optional[RotaryEmbedding] = None
-        if self.positional_embedding in ['rope', 'sin_rope']:
+        if self.positional_embedding in {'rope', 'sin_rope'}:
             assert _is_custom(custom, memory_efficient)
             self.rope = RotaryEmbedding(d_model // num_heads, max_period=max_period,
                                         xpos=xpos, scale=positional_scale, device=device)
 
         self.checkpointing = checkpointing
 
-        assert checkpointing in ['none', 'torch', 'xformers_default', 'xformers_mm']
+        assert checkpointing in {'none', 'torch', 'xformers_default', 'xformers_mm'}
         if self.checkpointing.startswith('xformers'):
             _verify_xformers_internal_compat()
 
         self.layers = nn.ModuleList()
-        for idx in range(num_layers):
+        for _ in range(num_layers):
             self.layers.append(
                 layer_class(
                     d_model=d_model, num_heads=num_heads, dim_feedforward=dim_feedforward,

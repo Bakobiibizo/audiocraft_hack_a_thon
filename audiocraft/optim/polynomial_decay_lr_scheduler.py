@@ -30,18 +30,17 @@ class PolynomialDecayLRScheduler(_LRScheduler):
 
     def _get_sched_lr(self, lr: float, step: int):
         if self.zero_lr_warmup_steps > 0 and step <= self.zero_lr_warmup_steps:
-            lr = 0
+            return 0
         elif self.warmup_steps > 0 and step <= self.warmup_steps + self.zero_lr_warmup_steps:
             lr_ratio = (step - self.zero_lr_warmup_steps) / float(self.warmup_steps)
-            lr = lr_ratio * lr
+            return lr_ratio * lr
         elif step >= self.total_steps:
-            lr = self.end_lr
+            return self.end_lr
         else:
             total_warmup_steps = self.warmup_steps + self.zero_lr_warmup_steps
             lr_range = lr - self.end_lr
             pct_remaining = 1 - (step - total_warmup_steps) / (self.total_steps - total_warmup_steps)
-            lr = lr_range * pct_remaining ** self.power + self.end_lr
-        return lr
+            return lr_range * pct_remaining ** self.power + self.end_lr
 
     def get_lr(self):
         return [self._get_sched_lr(base_lr, self.last_epoch) for base_lr in self.base_lrs]

@@ -306,9 +306,8 @@ class CachedBatchLoader:
             r = queue.popleft().result()
             if r is None:
                 return None
-            else:
-                queue.append(pool.submit(self._load_one, next_index))
-                next_index += 1
+            queue.append(pool.submit(self._load_one, next_index))
+            next_index += 1
             return r
 
         with pool:

@@ -37,8 +37,7 @@ class TestMBD:
         diffusion_model = DiffusionUnet(chin=channels, num_steps=num_steps, codec_dim=codec_dim)
         schedule = NoiseSchedule(device='cpu', num_steps=num_steps)
         DP = DiffusionProcess(model=diffusion_model, noise_schedule=schedule)
-        mbd = MultiBandDiffusion(DPs=[DP], codec_model=compression_model)
-        return mbd
+        return MultiBandDiffusion(DPs=[DP], codec_model=compression_model)
 
     def test_model(self):
         random.seed(1234)

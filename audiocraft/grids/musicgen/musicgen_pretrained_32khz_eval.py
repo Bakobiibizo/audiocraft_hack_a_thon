@@ -31,16 +31,6 @@ def eval(launcher, batch_size: int = 32, eval_melody: bool = False):
         '+dataset.evaluate.batch_size': batch_size,
         '+metrics.fad.tf.batch_size': 16,
     }
-    # chroma-specific evaluation
-    chroma_opts = {
-        'dset': 'internal/music_400k_32khz',
-        'dataset.evaluate.segment_duration': 30,
-        'dataset.evaluate.num_samples': 1000,
-        'evaluate.metrics.chroma_cosine': True,
-        'evaluate.metrics.fad': False,
-        'evaluate.metrics.kld': False,
-        'evaluate.metrics.text_consistency': False,
-    }
     # binary for FAD computation: replace this path with your own path
     metrics_opts = {
         'metrics.fad.tf.bin': '/data/home/jadecopet/local/usr/opt/google-research'
@@ -55,6 +45,16 @@ def eval(launcher, batch_size: int = 32, eval_melody: bool = False):
     sub(opt1, opt2)
 
     if eval_melody:
+        # chroma-specific evaluation
+        chroma_opts = {
+            'dset': 'internal/music_400k_32khz',
+            'dataset.evaluate.segment_duration': 30,
+            'dataset.evaluate.num_samples': 1000,
+            'evaluate.metrics.chroma_cosine': True,
+            'evaluate.metrics.fad': False,
+            'evaluate.metrics.kld': False,
+            'evaluate.metrics.text_consistency': False,
+        }
         # chroma-specific metrics
         sub(opt1, opt2, chroma_opts)
 

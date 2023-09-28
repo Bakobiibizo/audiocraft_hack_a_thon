@@ -37,7 +37,7 @@ class MelSpectrogramWrapper(nn.Module):
                  log: bool = True, normalized: bool = False, floor_level: float = 1e-5):
         super().__init__()
         self.n_fft = n_fft
-        hop_length = int(hop_length)
+        hop_length = hop_length
         self.hop_length = hop_length
         self.mel_transform = MelSpectrogram(n_mels=n_mels, sample_rate=sample_rate, n_fft=n_fft, hop_length=hop_length,
                                             win_length=win_length, f_min=f_min, f_max=f_max, normalized=normalized,
@@ -111,9 +111,9 @@ class MultiScaleMelSpectrogramLoss(nn.Module):
                  n_mels: int = 64, f_min: float = 0.0, f_max: tp.Optional[float] = None,
                  normalized: bool = False, alphas: bool = True, floor_level: float = 1e-5):
         super().__init__()
-        l1s = list()
-        l2s = list()
-        self.alphas = list()
+        l1s = []
+        l2s = []
+        self.alphas = []
         self.total = 0
         self.normalized = normalized
         for i in range(range_start, range_end):

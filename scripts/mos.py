@@ -115,7 +115,6 @@ def index():
                 continue
             errors.append(f'{xp_or_grid} is neither an XP nor a grid!')
         assert xps or errors
-        blind = 'true' if request.form.get('blind') == 'on' else 'false'
         xps = list(xps)
         if not errors:
             signature = get_signature(xps)
@@ -126,6 +125,7 @@ def index():
             survey_path.mkdir(exist_ok=True)
             with open(survey_path / 'manifest.json', 'w') as f:
                 json.dump(manifest, f, indent=2)
+            blind = 'true' if request.form.get('blind') == 'on' else 'false'
             return redirect(url_for('survey', blind=blind, signature=signature))
     return render_template('index.html', errors=errors)
 
@@ -175,8 +175,7 @@ def survey(signature):
         for idx, xp in enumerate(xps)
     ]
 
-    keys = list(matched_samples.keys())
-    keys.sort()
+    keys = sorted(matched_samples.keys())
     rng = random.Random(seed)
     rng.shuffle(keys)
     model_ids = keys[:SAMPLES_PER_PAGE]
@@ -197,8 +196,7 @@ def survey(signature):
             }
             all_samples_results.append(result)
             for model in models:
-                rating = request.form[model['model_id']]
-                if rating:
+                if rating := request.form[model['model_id']]:
                     rating = int(rating)
                     assert rating <= MAX_RATING and rating >= 1
                     result['models'][model['xp'].sig] = rating
@@ -218,7 +216,7 @@ def survey(signature):
             print(result)
             with open(result_file, 'w') as f:
                 json.dump(result, f)
-            seed = seed + 1
+            seed += 1
             return redirect(url_for(
                 'survey', signature=signature, blind=blind, seed=seed,
                 exclude_prompted=exclude_prompted, exclude_unprompted=exclude_unprompted,

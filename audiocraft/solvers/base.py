@@ -46,7 +46,7 @@ class StandardSolver(ABC, flashy.BaseSolver):
         self._fsdp_modules: tp.List[fsdp.FSDP] = []
         self._ema_sources: nn.ModuleDict = nn.ModuleDict()
         self.ema: tp.Optional[optim.ModuleDictEMA] = None
-        self.dataloaders: tp.Dict[str, torch.utils.data.DataLoader] = dict()
+        self.dataloaders: tp.Dict[str, torch.utils.data.DataLoader] = {}
         self._log_updates = self.cfg.logging.get('log_updates', 10)
         if self.cfg.logging.log_tensorboard:
             self.init_tensorboard(**self.cfg.get('tensorboard'))
@@ -79,12 +79,12 @@ class StandardSolver(ABC, flashy.BaseSolver):
         self.build_model()
         self.logger.info("Model hash: %s", model_hash(self.model))
         assert 'model' in self.stateful.sources, \
-            "Please register the model to stateful with self.register_stateful('model') in build_model."
+                "Please register the model to stateful with self.register_stateful('model') in build_model."
         self.profiler = Profiler(self.model, **self.cfg.profiler)
         self.initialize_ema()
         self.register_stateful('ema')
         assert self.ema is None or 'ema' in self.stateful.sources, \
-            "Please register the ema to stateful with self.register_stateful('ema') in build_model."
+                "Please register the ema to stateful with self.register_stateful('ema') in build_model."
         self.deadlock_detect = DeadlockDetect(**self.cfg.deadlock)
         # basic statistics on the trained model
         model_size = sum(p.numel() for p in self.model.parameters() if p.requires_grad) / 1e6
@@ -337,7 +337,7 @@ class StandardSolver(ABC, flashy.BaseSolver):
         if rank0_checkpoint_path.exists():
             self.logger.info(f"Loading existing checkpoint: {current_checkpoint_path}")
             load_from_path = current_checkpoint_path
-            checkpoint.check_sharded_checkpoint(current_checkpoint_path, rank0_checkpoint_path)
+            checkpoint.check_sharded_checkpoint(load_from_path, rank0_checkpoint_path)
             checkpoint_source = checkpoint.CheckpointSource.CURRENT_XP
         elif self.cfg.continue_from and not continue_pretrained:
             self.logger.info(f"Continuing from provided checkpoint: {self.cfg.continue_from}")
@@ -367,13 +367,10 @@ class StandardSolver(ABC, flashy.BaseSolver):
             if 'fsdp_best_state' in state and state['fsdp_best_state']:
                 state.pop('best_state', None)
                 self.logger.info("... Loaded checkpoint has FSDP best state")
-            # FSDP is enabled in the solver, if the loaded checkpoints do not have FSDP support
-            # then we're initializing FSDP best state with the regular best state
             elif self.cfg.fsdp.use:
-                if 'fsdp_best_state' not in state or not state['fsdp_best_state']:
-                    # we swap non-FSDP checkpoints best_state to FSDP-compatible best state
-                    state['fsdp_best_state'] = state.pop('best_state')
-                    self.logger.info("... Loaded checkpoint does not have FSDP best state. Use regular best state")
+                # we swap non-FSDP checkpoints best_state to FSDP-compatible best state
+                state['fsdp_best_state'] = state.pop('best_state')
+                self.logger.info("... Loaded checkpoint does not have FSDP best state. Use regular best state")
 
         if state is not None:
             if load_best:
@@ -491,7 +488,7 @@ class StandardSolver(ABC, flashy.BaseSolver):
         assert len(self.state_dict()) > 0
         self.restore(replay_metrics=True)  # load checkpoint and replay history
         self.log_hyperparams(dict_from_config(self.cfg))
-        for epoch in range(self.epoch, self.cfg.optim.epochs + 1):
+        for _ in range(self.epoch, self.cfg.optim.epochs + 1):
             if self.should_stop_training():
                 return
             self.run_epoch()
@@ -611,8 +608,10 @@ class StandardSolver(ABC, flashy.BaseSolver):
             override_cfg (dict or omegaconf.DictConfig or None): potential device, as a string, i.e. 'cuda'.
         """
         from audiocraft import train
-        our_override_cfg: tp.Dict[str, tp.Any] = {'optim': {'ema': {'use': False}}}
-        our_override_cfg['autocast'] = autocast
+        our_override_cfg: tp.Dict[str, tp.Any] = {
+            'optim': {'ema': {'use': False}},
+            'autocast': autocast,
+        }
         if dtype is not None:
             our_override_cfg['dtype'] = dtype
         if device is not None:

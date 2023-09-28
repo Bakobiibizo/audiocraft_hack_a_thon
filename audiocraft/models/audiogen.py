@@ -77,11 +77,7 @@ class AudioGen:
           # see: https://huggingface.co/facebook/audiogen-medium
         """
         if device is None:
-            if torch.cuda.device_count():
-                device = 'cuda'
-            else:
-                device = 'cpu'
-
+            device = 'cuda' if torch.cuda.device_count() else 'cpu'
         if name == 'debug':
             # used only for unit tests
             compression_model = get_debug_compression_model(device, sample_rate=16000)
@@ -91,7 +87,7 @@ class AudioGen:
         compression_model = load_compression_model(name, device=device)
         lm = load_lm_model(name, device=device)
         assert 'self_wav' not in lm.condition_provider.conditioners, \
-            "AudioGen do not support waveform conditioning for now"
+                "AudioGen do not support waveform conditioning for now"
         return AudioGen(name, compression_model, lm)
 
     def set_generation_params(self, use_sampling: bool = True, top_k: int = 250,

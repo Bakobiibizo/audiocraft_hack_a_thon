@@ -74,8 +74,9 @@ def process_dataset(args, n_shards: int, node_index: int, task_index: tp.Optiona
         root_path = str(args.root_path)
         if not root_path.endswith('/'):
             root_path += '/'
-        assert path.startswith(str(root_path)), \
-            f"Mismatch between path and provided root: {path} VS {root_path}"
+        assert path.startswith(
+            root_path
+        ), f"Mismatch between path and provided root: {path} VS {root_path}"
 
         try:
             metadata_path = Path(path).with_suffix('.json')
