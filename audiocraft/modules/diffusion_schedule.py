@@ -75,18 +75,15 @@ class MultiBandProcessor(SampleProcessor):
 
     @property
     def mean(self):
-        mean = self.sum_x / self.counts
-        return mean
+        return self.sum_x / self.counts
 
     @property
     def std(self):
-        std = (self.sum_x2 / self.counts - self.mean**2).clamp(min=0).sqrt()
-        return std
+        return (self.sum_x2 / self.counts - self.mean**2).clamp(min=0).sqrt()
 
     @property
     def target_std(self):
-        target_std = self.sum_target_x2 / self.counts
-        return target_std
+        return self.sum_target_x2 / self.counts
 
     def project_sample(self, x: torch.Tensor):
         assert x.dim() == 3
@@ -147,10 +144,7 @@ class NoiseSchedule:
         self.rng = random.Random(1234)
 
     def get_beta(self, step: tp.Union[int, torch.Tensor]):
-        if self.n_bands is None:
-            return self.betas[step]
-        else:
-            return self.betas[:, step]  # [n_bands, len(step)]
+        return self.betas[step] if self.n_bands is None else self.betas[:, step]
 
     def get_initial_noise(self, x: torch.Tensor):
         if self.n_bands is None:
@@ -208,14 +202,17 @@ class NoiseSchedule:
             alpha = 1 - self.betas[step]
             previous = (current - (1 - alpha) / (1 - alpha_bar).sqrt() * estimate) / alpha.sqrt()
             previous_alpha_bar = self.get_alpha_bar(step=step - 1)
-            if step == 0:
+            if (
+                step == 0
+                or self.variance != 'beta'
+                and self.variance != 'beta_tilde'
+                and self.variance == 'none'
+            ):
                 sigma2 = 0
             elif self.variance == 'beta':
                 sigma2 = 1 - alpha
             elif self.variance == 'beta_tilde':
                 sigma2 = (1 - previous_alpha_bar) / (1 - alpha_bar) * (1 - alpha)
-            elif self.variance == 'none':
-                sigma2 = 0
             else:
                 raise ValueError(f'Invalid variance type {self.variance}')
 

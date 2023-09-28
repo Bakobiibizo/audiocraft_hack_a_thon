@@ -44,8 +44,7 @@ def get_solver(cfg):
             assert cfg.dataset[split].batch_size % flashy.distrib.world_size() == 0
             cfg.dataset[split].batch_size //= flashy.distrib.world_size()
     resolve_config_dset_paths(cfg)
-    solver = solvers.get_solver(cfg)
-    return solver
+    return solvers.get_solver(cfg)
 
 
 def get_solver_from_xp(xp: XP, override_cfg: tp.Optional[tp.Union[dict, omegaconf.DictConfig]] = None,
@@ -75,7 +74,7 @@ def get_solver_from_xp(xp: XP, override_cfg: tp.Optional[tp.Union[dict, omegacon
         cfg = omegaconf.OmegaConf.merge(cfg, omegaconf.DictConfig(override_cfg))
     if disable_fsdp and cfg.fsdp.use:
         cfg.fsdp.use = False
-        assert load_best is True
+        assert load_best
         # ignoring some keys that were FSDP sharded like model, ema, and best_state.
         # fsdp_best_state will be used in that case. When using a specific solver,
         # one is responsible for adding the relevant keys, e.g. 'optimizer'.

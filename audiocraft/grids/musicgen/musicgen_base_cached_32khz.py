@@ -45,23 +45,3 @@ def explorer(launcher):
     # REMOVE THE FOLLOWING RETURN STATEMENT ONCE THE ABOVE JOBS ARE DONE,
     # OR SUFFICIENTLY AHEAD.
     return
-
-    cache = {
-        'cache.path': '/fsx-codegen/defossez/cache/interleave_stereo_nv_32k',
-    }
-    launcher.bind_(fsdp, cache)
-
-    launcher.slurm_(gpus=32).bind_(label='32gpus')
-    with launcher.job_array():
-        sub = launcher.bind()
-        sub()
-
-    launcher.slurm_(gpus=64).bind_(label='64gpus')
-    with launcher.job_array():
-        sub = launcher.bind()
-        sub(medium, adam)
-
-    launcher.slurm_(gpus=96).bind_(label='96gpus')
-    with launcher.job_array():
-        sub = launcher.bind()
-        sub(large, cfg_low, wd_low, adam, {'optim.max_norm': 3})

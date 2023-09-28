@@ -78,8 +78,10 @@ class MusicGenSolver(base.StandardSolver):
             override_cfg (dict or omegaconf.DictConfig or None): potential device, as a string, i.e. 'cuda'.
         """
         from audiocraft import train
-        our_override_cfg: tp.Dict[str, tp.Any] = {'optim': {'ema': {'use': False}}}
-        our_override_cfg['autocast'] = autocast
+        our_override_cfg: tp.Dict[str, tp.Any] = {
+            'optim': {'ema': {'use': False}},
+            'autocast': autocast,
+        }
         if dtype is not None:
             our_override_cfg['dtype'] = dtype
         if device is not None:
@@ -255,8 +257,8 @@ class MusicGenSolver(base.StandardSolver):
             audio = None
             # In that case the batch will be a tuple coming from the _cached_batch_writer bit below.
             infos, = batch  # type: ignore
-            assert all([isinstance(info, AudioInfo) for info in infos])
-            assert all([info.audio_tokens is not None for info in infos])  # type: ignore
+            assert all(isinstance(info, AudioInfo) for info in infos)
+            assert all(info.audio_tokens is not None for info in infos)
             audio_tokens = torch.stack([info.audio_tokens for info in infos]).to(self.device)  # type: ignore
             audio_tokens = audio_tokens.long()
             for info in infos:
@@ -458,7 +460,7 @@ class MusicGenSolver(base.StandardSolver):
         gen_audio = self.compression_model.decode(gen_tokens, None)
 
         bench_end = time.time()
-        gen_outputs = {
+        return {
             'rtf': (bench_end - bench_start) / gen_duration,
             'ref_audio': audio,
             'gen_audio': gen_audio,
@@ -466,7 +468,6 @@ class MusicGenSolver(base.StandardSolver):
             'prompt_audio': prompt_audio,
             'prompt_tokens': prompt_tokens,
         }
-        return gen_outputs
 
     def generate_audio(self) -> dict:
         """Audio generation stage."""
@@ -606,7 +607,7 @@ class MusicGenSolver(base.StandardSolver):
             chroma_cosine = builders.get_chroma_cosine_similarity(self.cfg.metrics.chroma_cosine).to(self.device)
             # if we have predefind wavs for chroma we should purge them for computing the cosine metric
             has_predefined_eval_chromas = 'self_wav' in self.model.condition_provider.conditioners and \
-                                          self.model.condition_provider.conditioners['self_wav'].has_eval_wavs()
+                                              self.model.condition_provider.conditioners['self_wav'].has_eval_wavs()
             if has_predefined_eval_chromas:
                 warn_once(self.logger, "Attempting to run cosine eval for config with pre-defined eval chromas! "
                                        'Resetting eval chromas to None for evaluation.')
@@ -631,7 +632,7 @@ class MusicGenSolver(base.StandardSolver):
 
             for idx, batch in enumerate(lp):
                 audio, meta = batch
-                assert all([self.cfg.sample_rate == m.sample_rate for m in meta])
+                assert all(self.cfg.sample_rate == m.sample_rate for m in meta)
 
                 target_duration = audio.shape[-1] / self.cfg.sample_rate
                 if self.cfg.evaluate.fixed_generation_duration:
@@ -650,7 +651,7 @@ class MusicGenSolver(base.StandardSolver):
                 y = audio.cpu()  # should already be on CPU but just in case
                 sizes = torch.tensor([m.n_frames for m in meta])  # actual sizes without padding
                 sample_rates = torch.tensor([m.sample_rate for m in meta])  # sample rates for audio samples
-                audio_stems = [Path(m.meta.path).stem + f"_{m.seek_time}" for m in meta]
+                audio_stems = [f"{Path(m.meta.path).stem}_{m.seek_time}" for m in meta]
 
                 if fad is not None:
                     if self.cfg.metrics.fad.use_gt:

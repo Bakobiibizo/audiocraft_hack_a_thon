@@ -38,7 +38,7 @@ class CompressionSolver(base.StandardSolver):
         self.aux_losses = nn.ModuleDict()
         self.info_losses = nn.ModuleDict()
         assert not cfg.fsdp.use, "FSDP not supported by CompressionSolver."
-        loss_weights = dict()
+        loss_weights = {}
         for loss_name, weight in self.cfg.losses.items():
             if loss_name in ['adv', 'feat']:
                 for adv_name, _ in self.adv_losses.items():
@@ -163,12 +163,17 @@ class CompressionSolver(base.StandardSolver):
 
         metrics.update(info_losses)
 
-        # aggregated GAN losses: this is useful to report adv and feat across different adversarial loss setups
-        adv_losses = [loss for loss_name, loss in metrics.items() if loss_name.startswith('adv')]
-        if len(adv_losses) > 0:
+        if adv_losses := [
+            loss
+            for loss_name, loss in metrics.items()
+            if loss_name.startswith('adv')
+        ]:
             metrics['adv'] = torch.sum(torch.stack(adv_losses))
-        feat_losses = [loss for loss_name, loss in metrics.items() if loss_name.startswith('feat')]
-        if len(feat_losses) > 0:
+        if feat_losses := [
+            loss
+            for loss_name, loss in metrics.items()
+            if loss_name.startswith('feat')
+        ]:
             metrics['feat'] = torch.sum(torch.stack(feat_losses))
 
         return metrics
@@ -193,7 +198,7 @@ class CompressionSolver(base.StandardSolver):
         pendings = []
         ctx = multiprocessing.get_context('spawn')
         with get_pool_executor(self.cfg.evaluate.num_workers, mp_context=ctx) as pool:
-            for idx, batch in enumerate(lp):
+            for batch in lp:
                 x = batch.to(self.device)
                 with torch.no_grad():
                     qres = self.model(x)

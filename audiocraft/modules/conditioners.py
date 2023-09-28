@@ -248,9 +248,7 @@ class WhiteSpaceTokenizer(Tokenizer):
 
         mask = length_to_mask(torch.IntTensor(lengths)).int()
         padded_output = pad_sequence(output, padding_value=self.pad_idx).int().t()
-        if return_text:
-            return padded_output, mask, texts  # type: ignore
-        return padded_output, mask
+        return (padded_output, mask, texts) if return_text else (padded_output, mask)
 
 
 class NoopTokenizer(Tokenizer):
@@ -623,8 +621,7 @@ class ChromaStemConditioner(WaveformConditioner):
         if wav.shape[-1] == 1:
             return self._extract_chroma(wav)
         stems = self._get_stemmed_wav(wav, sample_rate)
-        chroma = self._extract_chroma(stems)
-        return chroma
+        return self._extract_chroma(stems)
 
     @torch.no_grad()
     def _get_full_chroma_for_cache(self, path: tp.Union[str, Path], x: WavCondition, idx: int) -> torch.Tensor:
@@ -632,8 +629,7 @@ class ChromaStemConditioner(WaveformConditioner):
         wav, sr = audio_read(path)
         wav = wav[None].to(self.device)
         wav = convert_audio(wav, sr, self.sample_rate, to_channels=1)
-        chroma = self._compute_wav_embedding(wav, self.sample_rate)[0]
-        return chroma
+        return self._compute_wav_embedding(wav, self.sample_rate)[0]
 
     def _extract_chroma_chunk(self, full_chroma: torch.Tensor, x: WavCondition, idx: int) -> torch.Tensor:
         """Extract a chunk of chroma from the full chroma derived from the full waveform."""
@@ -969,11 +965,15 @@ class CLAPEmbeddingConditioner(JointEmbeddingConditioner):
         # Trying to limit as much as possible sync points when the cache is warm.
         no_undefined_paths = all(p is not None for p in x.path)
         if self.wav_cache is not None and no_undefined_paths:
-            assert all([p is not None for p in x.path]), "Cache requires all JointEmbedCondition paths to be provided"
+            assert all(
+                p is not None for p in x.path
+            ), "Cache requires all JointEmbedCondition paths to be provided"
             paths = [Path(p) for p in x.path if p is not None]
             self.wav_cache.populate_embed_cache(paths, x)
         if self.text_cache is not None and no_undefined_paths:
-            assert all([p is not None for p in x.path]), "Cache requires all JointEmbedCondition paths to be provided"
+            assert all(
+                p is not None for p in x.path
+            ), "Cache requires all JointEmbedCondition paths to be provided"
             paths = [Path(p) for p in x.path if p is not None]
             self.text_cache.populate_embed_cache(paths, x)
         return x
@@ -1340,7 +1340,7 @@ class ConditionFuser(StreamingModule):
                  cross_attention_pos_emb_scale: float = 1.0):
         super().__init__()
         assert all(
-            [k in self.FUSING_METHODS for k in fuse2cond.keys()]
+            k in self.FUSING_METHODS for k in fuse2cond.keys()
         ), f"Got invalid fuse method, allowed methods: {self.FUSING_METHODS}"
         self.cross_attention_pos_emb = cross_attention_pos_emb
         self.cross_attention_pos_emb_scale = cross_attention_pos_emb_scale

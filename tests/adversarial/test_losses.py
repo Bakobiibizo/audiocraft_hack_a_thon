@@ -91,8 +91,7 @@ class TestDiscriminatorAdversarialLoss:
         disc_loss_real = get_real_criterion(loss_type)
         disc_loss_fake = get_fake_criterion(loss_type)
 
-        loss = disc_loss_fake(fake) + disc_loss_real(real)
-        return loss
+        return disc_loss_fake(fake) + disc_loss_real(real)
 
     def test_hinge_discriminator_adv_loss(self):
         loss_type = 'hinge'

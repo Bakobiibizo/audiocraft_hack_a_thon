@@ -37,14 +37,10 @@ def checkpoint_name(name: tp.Optional[str] = None, rank: tp.Optional[int] = None
     Returns:
         str: The checkpoint name.
     """
-    suffix = ''
     if rank is None:
         rank = flashy.distrib.rank()
-    if rank > 0 and use_fsdp:
-        suffix = '.' + str(rank)
-    name_part = ''
-    if name is not None:
-        name_part = f'_{name}'
+    suffix = f'.{str(rank)}' if rank > 0 and use_fsdp else ''
+    name_part = f'_{name}' if name is not None else ''
     return f'checkpoint{name_part}.th{suffix}'
 
 
@@ -78,10 +74,7 @@ def resolve_checkpoint_path(sig_or_path: tp.Union[Path, str], name: tp.Optional[
     if path.is_dir():
         path = path / checkpoint_name(name, use_fsdp=use_fsdp)
 
-    if path.exists():
-        return path
-    else:
-        return None
+    return path if path.exists() else None
 
 
 def load_checkpoint(checkpoint_path: Path, is_sharded: bool = False) -> tp.Any:
@@ -106,9 +99,7 @@ def flush_stale_checkpoints(checkpoint_path: Path, keep_last: tp.Optional[int] =
     if keep_last is None or keep_last <= 0:
         return
     checkpoint_dir = checkpoint_path.parent
-    suffix = ''
-    if flashy.distrib.rank() > 0:
-        suffix = f'.{flashy.distrib.rank()}'
+    suffix = f'.{flashy.distrib.rank()}' if flashy.distrib.rank() > 0 else ''
     checkpoint_files_with_epoch = []
     for path in Path(checkpoint_dir).glob(f'checkpoint_*.th{suffix}'):
         epoch_part = path.name.split('.', 1)[0].split('_', 1)[1]
@@ -125,12 +116,12 @@ def flush_stale_checkpoints(checkpoint_path: Path, keep_last: tp.Optional[int] =
 def check_sharded_checkpoint(checkpoint_path: Path, rank0_checkpoint_path: Path) -> None:
     """Check sharded checkpoint state, ensuring the checkpoints are not corrupted."""
     # Finish the work of a previous run that got interrupted while dumping.
-    old_path = Path(str(checkpoint_path) + '.old')
+    old_path = Path(f'{str(checkpoint_path)}.old')
     if old_path.exists():
         raise RuntimeError(
             f"Old checkpoint {old_path} from previous version of this code exist, cannot safely proceed.")
-    token = Path(str(rank0_checkpoint_path) + '.tmp.done')
-    tmp_path = Path(str(checkpoint_path) + '.tmp')
+    token = Path(f'{str(rank0_checkpoint_path)}.tmp.done')
+    tmp_path = Path(f'{str(checkpoint_path)}.tmp')
     if token.exists():
         if tmp_path.exists():
             tmp_path.rename(checkpoint_path)
@@ -146,7 +137,7 @@ def _safe_save_checkpoint(state: tp.Any, checkpoint_path: Path, is_sharded: bool
             flashy.distrib.barrier()
 
     if flashy.distrib.is_rank_zero():
-        token = Path(str(checkpoint_path) + '.tmp.done')
+        token = Path(f'{str(checkpoint_path)}.tmp.done')
         if token.exists():
             token.unlink()
     _barrier_if_sharded()

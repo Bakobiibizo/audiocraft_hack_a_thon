@@ -21,10 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 def to_real(x):
-    if torch.is_complex(x):
-        return x.real
-    else:
-        return x
+    return x.real if torch.is_complex(x) else x
 
 
 class DAdaptAdam(torch.optim.Optimizer):
@@ -67,16 +64,16 @@ class DAdaptAdam(torch.optim.Optimizer):
                  decouple=True,
                  d0=1e-6,
                  growth_rate=float('inf')):
-        if not 0.0 < d0:
-            raise ValueError("Invalid d0 value: {}".format(d0))
-        if not 0.0 < lr:
-            raise ValueError("Invalid learning rate: {}".format(lr))
-        if not 0.0 < eps:
-            raise ValueError("Invalid epsilon value: {}".format(eps))
+        if d0 <= 0.0:
+            raise ValueError(f"Invalid d0 value: {d0}")
+        if lr <= 0.0:
+            raise ValueError(f"Invalid learning rate: {lr}")
+        if eps <= 0.0:
+            raise ValueError(f"Invalid epsilon value: {eps}")
         if not 0.0 <= betas[0] < 1.0:
-            raise ValueError("Invalid beta parameter at index 0: {}".format(betas[0]))
+            raise ValueError(f"Invalid beta parameter at index 0: {betas[0]}")
         if not 0.0 <= betas[1] < 1.0:
-            raise ValueError("Invalid beta parameter at index 1: {}".format(betas[1]))
+            raise ValueError(f"Invalid beta parameter at index 1: {betas[1]}")
 
         if decouple:
             logger.info("Using decoupled weight decay")
@@ -110,10 +107,7 @@ class DAdaptAdam(torch.optim.Optimizer):
             closure (callable, optional): A closure that reevaluates the model
                 and returns the loss.
         """
-        loss = None
-        if closure is not None:
-            loss = closure()
-
+        loss = closure() if closure is not None else None
         g_sq = 0.0
         sksq_weighted = 0.0
         sk_l1 = 0.0

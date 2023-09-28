@@ -66,12 +66,11 @@ class FileCleaner:
     def _cleanup(self):
         now = time.time()
         for time_added, path in list(self.files):
-            if now - time_added > self.file_lifetime:
-                if path.exists():
-                    path.unlink()
-                self.files.pop(0)
-            else:
+            if now - time_added <= self.file_lifetime:
                 break
+            if path.exists():
+                path.unlink()
+            self.files.pop(0)
 
 
 file_cleaner = FileCleaner()
@@ -155,8 +154,7 @@ def predict_batched(texts, melodies):
     max_text_length = 512
     texts = [text[:max_text_length] for text in texts]
     load_model('facebook/musicgen-melody')
-    res = _do_predictions(texts, melodies, BATCHED_DURATION)
-    return res
+    return _do_predictions(texts, melodies, BATCHED_DURATION)
 
 
 def predict_full(model, decoder, text, melody, duration, topk, topp, temperature, cfg_coef, progress=gr.Progress()):
@@ -442,9 +440,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    launch_kwargs = {}
-    launch_kwargs['server_name'] = args.listen
-
+    launch_kwargs = {'server_name': args.listen}
     if args.username and args.password:
         launch_kwargs['auth'] = (args.username, args.password)
     if args.server_port:

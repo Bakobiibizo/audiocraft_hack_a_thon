@@ -100,9 +100,7 @@ class Balancer:
             norms[name] = norm
             grads[name] = grad
 
-        count = 1
-        if self.per_batch_item:
-            count = len(grad)
+        count = len(grad) if self.per_batch_item else 1
         # Average norms across workers. Theoretically we should average the
         # squared norm, then take the sqrt, but it worked fine like that.
         avg_norms = flashy.distrib.average_metrics(self.averager(norms), count)
@@ -116,7 +114,7 @@ class Balancer:
             for k, v in avg_norms.items():
                 self._metrics[f'ratio_{k}'] = v / total
 
-        total_weights = sum([self.weights[k] for k in avg_norms])
+        total_weights = sum(self.weights[k] for k in avg_norms)
         assert total_weights > 0.
         desired_ratios = {k: w / total_weights for k, w in self.weights.items()}
 

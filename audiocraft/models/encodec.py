@@ -103,11 +103,11 @@ class CompressionModel(ABC, nn.Module):
 
         from . import builders, loaders
         model: CompressionModel
-        if name in ['dac_44khz', 'dac_24khz']:
+        if name in {'dac_44khz', 'dac_24khz'}:
             model_type = name.split('_')[1]
             logger.info("Getting pretrained compression model from DAC %s", model_type)
             model = DAC(model_type)
-        elif name in ['debug_compression_model']:
+        elif name in {'debug_compression_model'}:
             logger.info("Getting pretrained compression model for debug")
             model = builders.get_debug_compression_model()
         elif Path(name).exists():
@@ -349,10 +349,7 @@ class HFEncodecCompressionModel(CompressionModel):
         return res[0][0], res[1][0]
 
     def decode(self, codes: torch.Tensor, scale: tp.Optional[torch.Tensor] = None):
-        if scale is None:
-            scales = [None]  # type: ignore
-        else:
-            scales = scale  # type: ignore
+        scales = [None] if scale is None else scale
         res = self.model.decode(codes[None], scales)
         return res[0]
 

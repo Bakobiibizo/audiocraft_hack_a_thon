@@ -19,11 +19,13 @@ def _get_all_non_persistent_buffers_set(module: nn.Module, root: str = "") -> se
     for (name, sub_module) in module.named_modules():
         if name == '':
             buffer_names = module._non_persistent_buffers_set
-            buffer_names = {f"{root}.{buff_name}" if len(root) > 0 else buff_name
-                            for buff_name in buffer_names}
+            buffer_names = {
+                f"{root}.{buff_name}" if root != "" else buff_name
+                for buff_name in buffer_names
+            }
             names.update(buffer_names)
         else:
-            sub_name = f"{root}.{name}" if len(root) > 0 else name
+            sub_name = f"{root}.{name}" if root != "" else name
             sub_buffer_names = _get_all_non_persistent_buffers_set(sub_module, sub_name)
             names.update(sub_buffer_names)
     return names
@@ -57,8 +59,8 @@ class ModuleDictEMA:
             for key, val in _get_named_tensors(module):
                 if not val.is_floating_point():
                     continue
-                device = self.device or val.device
                 if key not in self.state[module_name]:
+                    device = self.device or val.device
                     self.state[module_name][key] = val.detach().to(device, copy=True)
 
     def step(self):

@@ -91,11 +91,9 @@ def wrap_with_fsdp(cfg, model: torch.nn.Module,
     local_rank = dora.distrib.get_distrib_spec().local_rank
     assert local_rank < torch.cuda.device_count(), "Please upgrade Dora!"
 
-    auto_wrap_policy = None
     if block_classes is None:
         block_classes = {StreamingTransformerLayer, ConditioningProvider}
-    if cfg.per_block:
-        auto_wrap_policy = ModuleWrapPolicy(block_classes)
+    auto_wrap_policy = ModuleWrapPolicy(block_classes) if cfg.per_block else None
     wrapped = _FSDPFixStateDict(
         model,
         sharding_strategy=sharding_strategy_config,
@@ -131,7 +129,7 @@ def purge_fsdp(model: FSDP):
         storage_size: int = unsharded_flat_param._typed_storage()._size()  # type: ignore
         if storage_size == 0:
             continue
-        true_list = [True for h in handles]
+        true_list = [True for _ in handles]
         _reshard(module, handles, true_list)
 
 

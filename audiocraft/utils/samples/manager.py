@@ -181,17 +181,18 @@ class SampleManager:
             Path: The path at which the audio is stored.
         """
         existing_paths = [
-            path for path in stem_path.parent.glob(stem_path.stem + '.*')
+            path
+            for path in stem_path.parent.glob(f'{stem_path.stem}.*')
             if path.suffix != '.json'
         ]
         exists = len(existing_paths) > 0
-        if exists and overwrite:
-            logger.warning(f"Overwriting existing audio file with stem path {stem_path}")
-        elif exists:
-            return existing_paths[0]
+        if exists:
+            if overwrite:
+                logger.warning(f"Overwriting existing audio file with stem path {stem_path}")
+            else:
+                return existing_paths[0]
 
-        audio_path = audio_write(stem_path, wav, **self.xp.cfg.generate.audio)
-        return audio_path
+        return audio_write(stem_path, wav, **self.xp.cfg.generate.audio)
 
     def add_sample(self, sample_wav: torch.Tensor, epoch: int, index: int = 0,
                    conditions: tp.Optional[tp.Dict[str, str]] = None, prompt_wav: tp.Optional[torch.Tensor] = None,
@@ -288,18 +289,17 @@ class SampleManager:
             samples_epoch = max(sample.epoch for sample in self.samples if sample.epoch <= max_epoch)
         else:
             samples_epoch = self.latest_epoch if epoch < 0 else epoch
-        samples = {
+        return {
             sample
             for sample in self.samples
             if (
-                (sample.epoch == samples_epoch) and
-                (not exclude_prompted or sample.prompt is None) and
-                (not exclude_unprompted or sample.prompt is not None) and
-                (not exclude_conditioned or not sample.conditioning) and
-                (not exclude_unconditioned or sample.conditioning)
+                (sample.epoch == samples_epoch)
+                and (not exclude_prompted or sample.prompt is None)
+                and (not exclude_unprompted or sample.prompt is not None)
+                and (not exclude_conditioned or not sample.conditioning)
+                and (not exclude_unconditioned or sample.conditioning)
             )
         }
-        return samples
 
 
 def slugify(value: tp.Any, allow_unicode: bool = False):
@@ -347,7 +347,7 @@ def _match_unstable_samples(samples_per_xp: tp.List[tp.Set[Sample]]) -> tp.Dict[
         if sample.prompt is None and not sample.conditioning
     ] for samples in samples_per_xp]
     # Trim samples per xp so all samples can have a match
-    min_len = min([len(samples) for samples in unstable_samples_per_xp])
+    min_len = min(len(samples) for samples in unstable_samples_per_xp)
     unstable_samples_per_xp = [samples[:min_len] for samples in unstable_samples_per_xp]
     # Dictionary of index -> list of matched samples
     return {

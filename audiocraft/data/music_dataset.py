@@ -75,18 +75,17 @@ class MusicInfo(AudioInfo):
     @staticmethod
     def attribute_getter(attribute):
         if attribute == 'bpm':
-            preprocess_func = get_bpm
+            return get_bpm
         elif attribute == 'key':
-            preprocess_func = get_musical_key
+            return get_musical_key
         elif attribute in ['moods', 'keywords']:
-            preprocess_func = get_keyword_list
+            return get_keyword_list
         elif attribute in ['genre', 'name', 'instrument']:
-            preprocess_func = get_keyword
+            return get_keyword
         elif attribute in ['title', 'artist', 'description']:
-            preprocess_func = get_string
+            return get_string
         else:
-            preprocess_func = None
-        return preprocess_func
+            return None
 
     @classmethod
     def from_dict(cls, dictionary: dict, fields_required: bool = False):

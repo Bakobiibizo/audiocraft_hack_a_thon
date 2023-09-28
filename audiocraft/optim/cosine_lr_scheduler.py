@@ -33,15 +33,13 @@ class CosineLRScheduler(_LRScheduler):
     def _get_sched_lr(self, lr: float, step: int):
         if step < self.warmup_steps:
             lr_ratio = step / self.warmup_steps
-            lr = lr_ratio * lr
         elif step <= self.total_steps:
             s = (step - self.warmup_steps) / (self.total_steps - self.warmup_steps)
             lr_ratio = self.lr_min_ratio + 0.5 * (1 - self.lr_min_ratio) * \
-                (1. + math.cos(math.pi * s / self.cycle_length))
-            lr = lr_ratio * lr
+                    (1. + math.cos(math.pi * s / self.cycle_length))
         else:
             lr_ratio = self.lr_min_ratio
-            lr = lr_ratio * lr
+        lr *= lr_ratio
         return lr
 
     def get_lr(self):

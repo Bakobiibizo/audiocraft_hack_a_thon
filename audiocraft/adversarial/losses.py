@@ -67,23 +67,25 @@ class AdversarialLoss(nn.Module):
     def _save_to_state_dict(self, destination, prefix, keep_vars):
         # Add the optimizer state dict inside our own.
         super()._save_to_state_dict(destination, prefix, keep_vars)
-        destination[prefix + 'optimizer'] = self.optimizer.state_dict()
+        destination[f'{prefix}optimizer'] = self.optimizer.state_dict()
         return destination
 
     def _load_from_state_dict(self, state_dict, prefix, *args, **kwargs):
         # Load optimizer state.
-        self.optimizer.load_state_dict(state_dict.pop(prefix + 'optimizer'))
+        self.optimizer.load_state_dict(state_dict.pop(f'{prefix}optimizer'))
         super()._load_from_state_dict(state_dict, prefix, *args, **kwargs)
 
     def get_adversary_pred(self, x):
         """Run adversary model, validating expected output format."""
         logits, fmaps = self.adversary(x)
-        assert isinstance(logits, list) and all([isinstance(t, torch.Tensor) for t in logits]), \
-            f'Expecting a list of tensors as logits but {type(logits)} found.'
+        assert isinstance(logits, list) and all(
+            isinstance(t, torch.Tensor) for t in logits
+        ), f'Expecting a list of tensors as logits but {type(logits)} found.'
         assert isinstance(fmaps, list), f'Expecting a list of features maps but {type(fmaps)} found.'
         for fmap in fmaps:
-            assert isinstance(fmap, list) and all([isinstance(f, torch.Tensor) for f in fmap]), \
-                f'Expecting a list of tensors as feature maps but {type(fmap)} found.'
+            assert isinstance(fmap, list) and all(
+                isinstance(f, torch.Tensor) for f in fmap
+            ), f'Expecting a list of tensors as feature maps but {type(fmap)} found.'
         return logits, fmaps
 
     def train_adv(self, fake: torch.Tensor, real: torch.Tensor) -> torch.Tensor:
@@ -150,7 +152,7 @@ def get_fake_criterion(loss_type: str) -> tp.Callable:
     assert loss_type in ADVERSARIAL_LOSSES
     if loss_type == 'mse':
         return mse_fake_loss
-    elif loss_type in ['hinge', 'hinge2']:
+    elif loss_type in {'hinge', 'hinge2'}:
         return hinge_fake_loss
     raise ValueError('Unsupported loss')
 
@@ -159,7 +161,7 @@ def get_real_criterion(loss_type: str) -> tp.Callable:
     assert loss_type in ADVERSARIAL_LOSSES
     if loss_type == 'mse':
         return mse_real_loss
-    elif loss_type in ['hinge', 'hinge2']:
+    elif loss_type in {'hinge', 'hinge2'}:
         return hinge_real_loss
     raise ValueError('Unsupported loss')
 
@@ -187,9 +189,7 @@ def mse_loss(x: torch.Tensor) -> torch.Tensor:
 
 
 def hinge_loss(x: torch.Tensor) -> torch.Tensor:
-    if x.numel() == 0:
-        return torch.tensor([0.0], device=x.device)
-    return -x.mean()
+    return torch.tensor([0.0], device=x.device) if x.numel() == 0 else -x.mean()
 
 
 def hinge2_loss(x: torch.Tensor) -> torch.Tensor:

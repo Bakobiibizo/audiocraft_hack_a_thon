@@ -45,10 +45,7 @@ def _guess_cluster_type() -> ClusterType:
 def get_cluster_type(
     cluster_type: tp.Optional[ClusterType] = None,
 ) -> tp.Optional[ClusterType]:
-    if cluster_type is None:
-        return _guess_cluster_type()
-
-    return cluster_type
+    return _guess_cluster_type() if cluster_type is None else cluster_type
 
 
 def get_slurm_parameters(

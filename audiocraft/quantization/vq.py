@@ -99,8 +99,7 @@ class ResidualVectorQuantizer(BaseQuantizer):
         """Decode the given codes to the quantized representation."""
         # codes is [B, K, T], with T frames, K nb of codebooks, vq.decode expects [K, B, T].
         codes = codes.transpose(0, 1)
-        quantized = self.vq.decode(codes)
-        return quantized
+        return self.vq.decode(codes)
 
     @property
     def total_codebooks(self):

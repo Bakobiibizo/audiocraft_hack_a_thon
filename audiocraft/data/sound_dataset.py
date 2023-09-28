@@ -55,11 +55,7 @@ class SoundInfo(SegmentWithAttributes):
 
     @staticmethod
     def attribute_getter(attribute):
-        if attribute == 'description':
-            preprocess_func = get_keyword_or_keyword_list
-        else:
-            preprocess_func = None
-        return preprocess_func
+        return get_keyword_or_keyword_list if attribute == 'description' else None
 
     @classmethod
     def from_dict(cls, dictionary: dict, fields_required: bool = False):
@@ -250,19 +246,13 @@ def snr_mixer(clean: torch.Tensor, noise: torch.Tensor, snr: int, min_overlap: f
 
 
 def snr_mix(src: torch.Tensor, dst: torch.Tensor, snr_low: int, snr_high: int, min_overlap: float):
-    if snr_low == snr_high:
-        snr = snr_low
-    else:
-        snr = np.random.randint(snr_low, snr_high)
-    mix = snr_mixer(src, dst, snr, min_overlap)
-    return mix
+    snr = snr_low if snr_low == snr_high else np.random.randint(snr_low, snr_high)
+    return snr_mixer(src, dst, snr, min_overlap)
 
 
 def mix_text(src_text: str, dst_text: str):
     """Mix text from different sources by concatenating them."""
-    if src_text == dst_text:
-        return src_text
-    return src_text + " " + dst_text
+    return src_text if src_text == dst_text else f"{src_text} {dst_text}"
 
 
 def mix_samples(wavs: torch.Tensor, infos: tp.List[SoundInfo], aug_p: float, mix_p: float,

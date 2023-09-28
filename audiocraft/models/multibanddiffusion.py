@@ -93,11 +93,11 @@ class MultiBandDiffusion:
         """
         if device is None:
             device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        assert bw in [1.5, 3.0, 6.0], f"bandwidth {bw} not available"
+        assert bw in {1.5, 3.0, 6.0}, f"bandwidth {bw} not available"
         if n_q is not None:
             assert n_q in [2, 4, 8]
             assert {1.5: 2, 3.0: 4, 6.0: 8}[bw] == n_q, \
-                f"bandwidth and number of codebooks missmatch to use n_q = {n_q} bw should be {n_q * (1.5 / 2)}"
+                    f"bandwidth and number of codebooks missmatch to use n_q = {n_q} bw should be {n_q * (1.5 / 2)}"
         n_q = {1.5: 2, 3.0: 4, 6.0: 8}[bw]
         codec_model = CompressionSolver.model_from_checkpoint(
             '//pretrained/facebook/encodec_24khz', device=device)
@@ -112,8 +112,6 @@ class MultiBandDiffusion:
             DPs.append(DiffusionProcess(model=models[i], noise_schedule=schedule))
         return MultiBandDiffusion(DPs=DPs, codec_model=codec_model)
 
-        return MultiBandDiffusion(DPs, codec_model)
-
     @torch.no_grad()
     def get_condition(self, wav: torch.Tensor, sample_rate: int) -> torch.Tensor:
         """Get the conditioning (i.e. latent reprentatios of the compression model) from a waveform.
@@ -124,16 +122,14 @@ class MultiBandDiffusion:
             wav = julius.resample_frac(wav, sample_rate, self.sample_rate)
         codes, scale = self.codec_model.encode(wav)
         assert scale is None, "Scaled compression models not supported."
-        emb = self.get_emb(codes)
-        return emb
+        return self.get_emb(codes)
 
     @torch.no_grad()
     def get_emb(self, codes: torch.Tensor):
         """Get latent representation from the discrete codes
         Argrs:
             codes (torch.Tensor): discrete tokens"""
-        emb = self.codec_model.decode_latent(codes)
-        return emb
+        return self.codec_model.decode_latent(codes)
 
     def generate(self, emb: torch.Tensor, size: tp.Optional[torch.Size] = None,
                  step_list: tp.Optional[tp.List[int]] = None):
